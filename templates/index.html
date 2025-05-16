@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Medicinal Plant Identifier</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4fff4;
+      color: #333;
+    }
+
+    header {
+      background-color: #4CAF50;
+      padding: 20px 40px;
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+    }
+
+    header span {
+      font-size: 28px;
+      margin-right: 10px;
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 40px;
+    }
+
+    #drop-area {
+      width: 320px;
+      height: 200px;
+      border: 2px dashed #4CAF50;
+      border-radius: 15px;
+      text-align: center;
+      line-height: 200px;
+      color: #4CAF50;
+      font-weight: bold;
+      margin-bottom: 20px;
+      transition: border 0.3s ease;
+      background-color: #eaffea;
+      cursor: pointer;
+    }
+
+    #drop-area.dragover {
+      border-color: #388E3C;
+      background-color: #d9ffd9;
+    }
+
+    #preview {
+      margin-top: 30px;
+      text-align: center;
+    }
+
+    .result-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #f0fff0;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      gap: 30px;
+      flex-wrap: wrap;
+    }
+
+    .result-container img {
+      max-width: 250px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .result-text {
+      font-size: 20px;
+      text-align: left;
+    }
+
+    .result-text div {
+      margin-bottom: 10px;
+    }
+
+    #newFoodBtn {
+      margin-top: 30px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    #newFoodBtn:hover {
+      background-color: #388E3C;
+    }
+
+    .spinner {
+      border: 4px solid #e0f5e0;
+      border-top: 4px solid #4CAF50;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span>🌿</span> Medicinal Plant Identifier
+</header>
+
+<main>
+  <div id="drop-area">Drag & Drop Image Here</div>
+
+  <div id="preview">
+    <!-- Spinner and results appear here -->
+  </div>
+
+  <button id="newFoodBtn" style="display:none;">Identify Another</button>
+</main>
+
+<script>
+  const dropArea = document.getElementById('drop-area');
+  const previewDiv = document.getElementById('preview');
+  const newFoodBtn = document.getElementById('newFoodBtn');
+
+  function uploadFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const imageURL = URL.createObjectURL(file);
+
+    previewDiv.innerHTML = '<div class="spinner"></div>';
+
+    fetch('/predict', {
+      method: 'POST',
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      dropArea.style.display = 'none';
+      newFoodBtn.style.display = 'inline-block';
+
+      previewDiv.innerHTML = `
+        <div class="result-container">
+          <img src="${imageURL}" alt="Uploaded Image" />
+          <div class="result-text">
+            <div><b>Predicted Plant:</b> ${data.class}</div>
+          </div>
+        </div>
+      `;
+    })
+    .catch(err => {
+      previewDiv.innerHTML = '<div style="color:red;">Error: ' + err + '</div>';
+    });
+  }
+
+  dropArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropArea.classList.add('dragover');
+  });
+
+  dropArea.addEventListener('dragleave', () => {
+    dropArea.classList.remove('dragover');
+  });
+
+  dropArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropArea.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) uploadFile(file);
+  });
+
+  dropArea.addEventListener('click', () => {
+    const tempInput = document.createElement('input');
+    tempInput.type = 'file';
+    tempInput.accept = 'image/*';
+    tempInput.onchange = () => {
+      const file = tempInput.files[0];
+      if (file) uploadFile(file);
+    };
+    tempInput.click();
+  });
+
+  newFoodBtn.addEventListener('click', () => {
+    previewDiv.innerHTML = '';
+    dropArea.style.display = 'block';
+    newFoodBtn.style.display = 'none';
+  });
+</script>
+
+</body>
+</html>
